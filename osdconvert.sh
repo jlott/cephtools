@@ -8,6 +8,16 @@ PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 function die { echo "Error: $1" 1>&2 ; usage ; }
 function usage { echo "Usage: $0 [-o OSDNUM|-a]" ; exit 1 ; }
 
+function rebalance {
+    while true ; do
+        read OSDCOUNT OSDUP OSDIN <<< $(ceph osd stat | awk '{print $2 " " $4 " " $6}')
+        HEALTH=$(ceph health)
+        if [ "$OSDCOUNT" -eq "$OSDUP" -a "$OSDCOUNT" -eq "$OSDIN" -a "$HEALTH" == "HEALTH_OK" ] ; then break ; fi
+        echo "$HEALTH - $OSDUP/$OSDCOUNT OSDs up, $OSDIN/$OSDCOUNT OSDs in - waiting"
+        sleep 30
+    done
+}
+
 OSDLIST=""
 while getopts "o:a" OPTION ; do
      case $OPTION in
@@ -31,25 +41,24 @@ for OSD in $OSDLIST ; do
     XFSLABEL=$(test $(dirname $DEVPATH) == "/dev/disk/by-label" && echo "-L $(basename $DEVPATH)")
 
     test $(ceph-conf -n osd.$OSD "host") == $(hostname -s) || die "osd.$OSD does not live on this host"
-    
-    while true ; do
-        read OSDCOUNT OSDUP OSDIN <<< $(ceph osd stat | awk '{print $2 " " $4 " " $6}')
-        HEALTH=$(ceph health)
-        if [ "$OSDCOUNT" -eq "$OSDUP" -a "$OSDCOUNT" -eq "$OSDIN" -a "$HEALTH" == "HEALTH_OK" ] ; then break ; fi
-        echo "$HEALTH - $OSDUP/$OSDCOUNT OSDs up, $OSDIN/$OSDCOUNT OSDs in - waiting"
-        sleep 30
-    done
+
+    rebalance
     
     echo "Rebuilding osd $OSD with XFS on $DEVPATH"
     echo "--------------------------------------"
     service ceph stop osd.$OSD
     ceph osd down $OSD
     ceph osd out $OSD
+
+    rebalance
+
     ceph osd rm $OSD
+
     while true ; do
         if umount "$DATAPATH" ; then break ; fi
         sleep 2
     done
+
     mkfs.xfs -f $XFSLABEL "$DEVPATH"
     mount "$DEVPATH" "$DATAPATH"
     ceph osd create $OSD
