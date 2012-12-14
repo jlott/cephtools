@@ -12,10 +12,11 @@ function usage { echo "Usage: $0 [-o OSDNUM|-a]" ; exit 1 ; }
 function rebalance {
 	echo -n "Waiting for a healthy cluster"
 	while true ; do
-		read OSDCOUNT OSDUP OSDIN <<< $(ceph osd stat | awk '{print $2 " " $4 " " $6}')
+		OSDCOUNT=$1
+		read OSDUP OSDIN <<< $(ceph osd stat | awk '{print $4 " " $6}')
 		HEALTH=$(ceph health)
 		if [ "$OSDCOUNT" -eq "$OSDUP" -a "$OSDCOUNT" -eq "$OSDIN" -a "$HEALTH" == "HEALTH_OK" ] ; then
-			echo ": $HEALTH"
+			echo " $HEALTH"
 			break
 		else
 			echo -n "."
@@ -48,7 +49,7 @@ for OSD in $OSDLIST ; do
 
 	test $(ceph-conf -n osd.$OSD "host") == $(hostname -s) || die "osd.$OSD does not live on this host"
 
-	rebalance
+	rebalance "$(ceph osd stat | awk '{print $2}')"
 
 	echo "Rebuilding osd $OSD with XFS on $DEVPATH"
 	echo "--------------------------------------"
@@ -56,7 +57,7 @@ for OSD in $OSDLIST ; do
 	ceph osd down $OSD
 	ceph osd out $OSD
 
-	rebalance
+	rebalance "$(ceph osd stat | awk '{print $2-1}')"
 
 	ceph osd rm $OSD
 
