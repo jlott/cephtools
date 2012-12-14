@@ -46,7 +46,10 @@ for OSD in $OSDLIST ; do
     ceph osd down $OSD
     ceph osd out $OSD
     ceph osd rm $OSD
-    umount "$DATAPATH"
+    while true ; do
+        if umount "$DATAPATH" ; then break ; fi
+        sleep 2
+    done
     mkfs.xfs -f $XFSLABEL "$DEVPATH"
     mount "$DEVPATH" "$DATAPATH"
     ceph osd create $OSD
