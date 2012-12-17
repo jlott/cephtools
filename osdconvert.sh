@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Rebuild OSD file systems to XFS and ensure they're in /etc/fstab
-
 set -eu
 PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 
