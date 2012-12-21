@@ -33,7 +33,7 @@ function weightramp {
     if [ $WEIGHT -lt 1 ] ; then
         ceph osd reweight "$2" "$WEIGHT"
         rebalance "$TOTALOSDCOUNT"
-    done
+		fi
 }
 
 OSDLIST=""
