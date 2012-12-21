@@ -9,27 +9,27 @@ function usage { echo "Usage: $0 [-o OSDNUM|-a]" ; exit 1 ; }
 
 function rebalance {
 	for HEALTH_CHECK in "HEALTH_WARN" "HEALTH_OK" ; do
-	    echo -n "Waiting for $HEALTH_CHECK"
-	    while true ; do
-		    OSDCOUNT=$1
-		    read OSDUP OSDIN <<< $(ceph osd stat | awk '{print $4 " " $6}')
-		    HEALTH=$(ceph health | awk '{print $1}')
-		    if [ "$OSDCOUNT" -eq "$OSDUP" -a "$OSDCOUNT" -eq "$OSDIN" -a "$HEALTH" == "$HEALTH_CHECK" ] ; then
-			    echo " $HEALTH"
-			    break
-		    else
-			    echo -n "."
-		    fi
-		    sleep 10
-	    done
+	echo -n "Waiting for $HEALTH_CHECK"
+	while true ; do
+		OSDCOUNT=$1
+		read OSDUP OSDIN <<< $(ceph osd stat | awk '{print $4 " " $6}')
+		HEALTH=$(ceph health | awk '{print $1}')
+		if [ "$OSDCOUNT" -eq "$OSDUP" -a "$OSDCOUNT" -eq "$OSDIN" -a "$HEALTH" == "$HEALTH_CHECK" ] ; then
+			echo " $HEALTH"
+			break
+		else
+			echo -n "."
+		fi
+		sleep 10
+	done
 	done
 }
 
 function weightramp {
-    for WEIGHT in $(seq -w "$1" "$1" 1) ; do
-        ceph osd reweight "$2" "$WEIGHT"
-        rebalance "$TOTALOSDCOUNT"
-    done
+	for WEIGHT in $(seq -w "$1" "$1" 1) ; do
+		ceph osd reweight "$2" "$WEIGHT"
+		rebalance "$TOTALOSDCOUNT"
+	done
 }
 
 OSDLIST=""
@@ -47,6 +47,7 @@ while getopts "o:a" OPTION ; do
 		;;
 	esac
 done
+
 test -n "$OSDLIST" || die "please use -o \$OSD or -a"
 
 TOTALOSDCOUNT=$(ceph osd stat | awk '{print $2}')
@@ -54,8 +55,8 @@ TOTALOSDCOUNT=$(ceph osd stat | awk '{print $2}')
 HEALTH=$(ceph health | awk '{print $1}')
 
 if [ "$HEALTH" -ne "HEALTH_OK" ]; then
-    echo "Ceph cluster health is not HEALTH_OK - refusing to start"
-    exit 1
+	echo "Ceph cluster health is not HEALTH_OK - refusing to start"
+	exit 1
 fi
 
 for OSD in $OSDLIST ; do
@@ -70,27 +71,19 @@ for OSD in $OSDLIST ; do
 	service ceph stop osd.$OSD
 	ceph osd down $OSD
 	ceph osd out $OSD
-
 	rebalance $((TOTALOSDCOUNT-1))
-
 	ceph osd rm $OSD
-
 	while true ; do
 		if umount "$DATAPATH" ; then break ; fi
 		sleep 2
 	done
-
 	mkfs.xfs -f $XFSLABEL "$DEVPATH"
 	mount "$DEVPATH" "$DATAPATH"
 	ceph osd create $OSD
 	ceph-osd -i $OSD --mkfs --mkkey --mkjournal
 	ceph auth add osd.$OSD osd 'allow *' mon 'allow rwx' -i $DATAPATH/keyring
 	grep "$DEVPATH" /etc/fstab || echo -e "$DEVPATH\t$DATAPATH\txfs\tdefaults\t0\t2" >> /etc/fstab
-	
 	ceph osd reweight $OSD 0
-	
 	service ceph start osd.$OSD
-
 	weightramp "0.01" $OSD
-
 done
