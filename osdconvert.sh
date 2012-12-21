@@ -30,9 +30,14 @@ function weightramp {
         ceph osd reweight "$2" "$WEIGHT"
         rebalance "$TOTALOSDCOUNT"
     done
+    if [ $WEIGHT -lt 1 ] ; then
+        ceph osd reweight "$2" "$WEIGHT"
+        rebalance "$TOTALOSDCOUNT"
+    done        
 }
 
 OSDLIST=""
+WEIGHT_INCREMENT="0.01"
 while getopts "o:a" OPTION ; do
 	case $OPTION in
 	a)
@@ -41,6 +46,10 @@ while getopts "o:a" OPTION ; do
 	o)
 		test "$OPTARG" -ge 0 || die "invalid OSD number: $OPTARG"
 		OSDLIST=$OPTARG
+		;;
+    w)
+		test "$OPTARG" -gt 0 -a "$OPTARG" -le 0.5 || die "invalid weight increment: $OPTARG"
+		WEIGHT_INCREMENT=$OPTARG
 		;;
 	*)
 		usage
@@ -91,6 +100,6 @@ for OSD in $OSDLIST ; do
 	
 	service ceph start osd.$OSD
 
-	weightramp "0.01" $OSD
+	weightramp $WEIGHT_INCREMENT $OSD
 
 done
