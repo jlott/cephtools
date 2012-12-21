@@ -33,7 +33,7 @@ function weightramp {
     if [ $WEIGHT -lt 1 ] ; then
         ceph osd reweight "$2" "$WEIGHT"
         rebalance "$TOTALOSDCOUNT"
-    done
+    done        
 }
 
 OSDLIST=""
@@ -95,9 +95,9 @@ for OSD in $OSDLIST ; do
 	ceph-osd -i $OSD --mkfs --mkkey --mkjournal
 	ceph auth add osd.$OSD osd 'allow *' mon 'allow rwx' -i $DATAPATH/keyring
 	grep "$DEVPATH" /etc/fstab || echo -e "$DEVPATH\t$DATAPATH\txfs\tdefaults\t0\t2" >> /etc/fstab
-
+	
 	ceph osd reweight $OSD 0
-
+	
 	service ceph start osd.$OSD
 
 	weightramp $WEIGHT_INCREMENT $OSD
