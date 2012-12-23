@@ -19,7 +19,7 @@ for (capture("ceph-conf -l osd. --filter-key-value host=\$(hostname)")) {
 }
 
 foreach (@osds) {
-	if (grep capture('mount -t xfs'),$_) {
+	if (`mount -t xfs | grep $_`) {
 		&timestamp; print "$_ appears to be mounted as XFS. Skipping.\n";
 	} else {
 		&timestamp(); print "Starting conversion of $_\n";
