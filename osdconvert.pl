@@ -33,25 +33,21 @@ foreach (@osds) {
 		&wait_health_bad();
 		&wait_health_good();
 		&timestamp; print "Removing $_ from the crush map... "; capture("ceph osd rm $num"); print "done.\n";
-		&timestamp; print "Waiting for file handles on $mountpoint to be released... ";
-		# FIXME we probably shouldnt retry forever here
-		while (`lsof | grep $mountpoint`) {
-			sleep 1;
-		}
-		print "done.\n";
+		# FIXME this should really time out and die eventually
+		&timestamp; print "Waiting for file handles on $mountpoint to be released... "; do { sleep 1; } while (`lsof | grep $mountpoint`); print "done.\n";
 		&timestamp; print "Unmounting $mountpoint... "; capture('umount',$mountpoint); print "done.\n";
 		&timestamp; print "Formatting $path as XFS... "; capture("mkfs.xfs -f -L $label $path"); print "done.\n";
 		&timestamp; print "Mounting $path at $mountpoint... "; capture("mkdir -p $mountpoint"); capture("mount $path $mountpoint"); print "done.\n";
 		&timestamp; print "Adding $_ to the crush map... "; capture("ceph osd create $num"); print "done.\n";
 		&timestamp; print "Creating $_ file system, key, and journal... "; capture("ceph-osd -i $num --mkfs --mkkey --mkjournal > /dev/null 2>&1"); print "done.\n";
 		&timestamp; print "Adding $_ key to the cluster... "; capture("ceph auth add $_ osd 'allow *' mon 'allow rwx' -i $mountpoint/keyring > /dev/null 2>&1"); print "done.\n";
-		# FIXME ensure $path / $mountpoint are in /etc/fstab here
+		unless (`grep $mountpoint /etc/fstab`) { open (FSTAB, '>>/etc/fstab'); print FSTAB "$path\t$mountpoint\txfs\tdefaults\t0\t2\n"; close (FSTAB); };
 		&timestamp; print "Setting initial weight of $_ to 0... "; capture("ceph osd reweight $num 0"); print "done.\n";
 		&timestamp; print "Starting service for $_... "; capture("service ceph start $_ > /dev/null 2>&1"); print "done.\n";
 		for (my $weight = 0.01; $weight <= 1; $weight += 0.01) {
 			&timestamp; print "Setting weight of $_ to $weight... "; capture("ceph osd reweight $num $weight"); print "done.\n";
-			wait_health_bad();
-			wait_health_good();
+			&wait_health_bad();
+			&wait_health_good();
 		}
 		&timestamp; print "Conversion of $_ complete!\n\n";
 	}
