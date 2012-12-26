@@ -6,6 +6,8 @@ use bignum;
 use POSIX 'strftime';
 use IPC::System::Simple qw(capture);
 
+$| = 1;
+
 chomp (my $health = capture('ceph health'));
 if ($health ne "HEALTH_OK") {
 	print "Refusing to start work on an unhealthy cluster.\n";
@@ -48,7 +50,7 @@ foreach (@osds) {
 			&timestamp; print "Setting weight of $_ to $weight... "; capture("ceph osd reweight $num $weight"); print "done.\n";
 			&wait_health_bad();
 			&wait_health_good();
-			&timestamp; print "Sleeping for 300 seconds..."; sleep 300; print "done.\n";
+			&timestamp; print "Sleeping for 300 seconds... "; sleep 300; print "done.\n";
 		}
 		&timestamp; print "Conversion of $_ complete!\n\n";
 	}
