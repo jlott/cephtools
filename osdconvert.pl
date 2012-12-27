@@ -46,11 +46,11 @@ foreach (@osds) {
 		unless (`grep $mountpoint /etc/fstab`) { open (FSTAB, '>>/etc/fstab'); print FSTAB "$path\t$mountpoint\txfs\tdefaults\t0\t2\n"; close (FSTAB); };
 		&timestamp; print "Setting initial weight of $_ to 0... "; capture("ceph osd reweight $num 0"); print "done.\n";
 		&timestamp; print "Starting service for $_... "; capture("service ceph start $_ > /dev/null 2>&1"); print "done.\n";
-		for (my $weight = 0.01; $weight <= 1; $weight += 0.01) {
+		for (my $weight = 0.005; $weight <= 1; $weight += 0.005) {
 			&timestamp; print "Setting weight of $_ to $weight... "; capture("ceph osd reweight $num $weight"); print "done.\n";
 			&wait_health_bad();
 			&wait_health_good();
-			&timestamp; print "Sleeping for 300 seconds... "; sleep 300; print "done.\n";
+			&timestamp; print "Sleeping for 100 seconds... "; sleep 100; print "done.\n";
 		}
 		&timestamp; print "Conversion of $_ complete!\n\n";
 	}
