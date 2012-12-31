@@ -1,7 +1,7 @@
-osdconvert
-==========
+cephtools
+=========
 
-Convert ceph OSD file systems
+fsconvert.pl - Convert ceph OSD file systems
 
 This script is intended to be run on one node in a live ceph cluster. It will serially step through every osd file system and stop the service, reformat its file system to XFS, remount, restart the service, and wait for cluster health to return to OK before processing the next osd.
 
