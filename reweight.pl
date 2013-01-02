@@ -8,7 +8,7 @@ use IPC::System::Simple qw(capture);
 
 
 my $weight_increment = 0.01;
-my $sleep_interval = 3;
+my $sleep_interval = 300;
 
 # make STDOUT hot
 $| = 1;
