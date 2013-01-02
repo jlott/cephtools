@@ -11,3 +11,9 @@ This script makes a few assumptions about its environment
  - we are converting from btrfs to XFS
  - we want labeled file systems, and are using /dev/disk/by-label in ceph.conf
  - we want converted file systems to be present in /etc/fstab
+
+
+
+reweight.pl - Ramp up OSD weight from any value to 1
+
+This script is intended to be used on a down/out OSD, or an OSD with a weight < 1. It will gradually increment the weight of the OSD back up to 1 to minimize IO impact.
