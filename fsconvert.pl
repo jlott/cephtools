@@ -45,7 +45,6 @@ foreach (@osds) {
 			&timestamp; print "Setting weight of $_ to $weight... "; capture("ceph osd reweight $num $weight"); print "done.\n";
 			&wait_health_bad();
 			&wait_health_good(0);
-			&timestamp; print "Sleeping for 300 seconds... "; sleep 300; print "done.\n";
 		}
 		&timestamp; print "Conversion of $_ complete!\n\n";
 	}

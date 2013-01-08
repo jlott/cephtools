@@ -8,7 +8,6 @@ use IPC::System::Simple qw(capture);
 
 
 my $weight_increment = 0.01;
-my $sleep_interval = 300;
 
 # make STDOUT hot
 $| = 1;
@@ -58,7 +57,6 @@ for (my $weight = ($osd_weight + $weight_increment); $weight <= 1; $weight += $w
 	&timestamp; print "Setting weight of osd.$osd to $weight... "; capture("ceph osd reweight $osd $weight"); print "done.\n";
 	&wait_health_bad();
 	&wait_health_good();
-	&timestamp; print "Sleeping for $sleep_interval seconds... "; sleep $sleep_interval; print "done.\n";
 }
 
 ($osd_state, $osd_quorum, $osd_weight) = (capture('ceph osd dump') =~ /osd\.$osd\s+(up|down)\s+(in|out)\s+weight\s+(\d+\.?\d*)\s+.+/);
