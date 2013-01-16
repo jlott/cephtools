@@ -38,7 +38,7 @@ foreach (@osds) {
 		&timestamp; print "Adding $_ to the crush map... "; capture("ceph osd create $num"); print "done.\n";
 		&timestamp; print "Creating $_ file system, key, and journal... "; capture("ceph-osd -i $num --mkfs --mkkey --mkjournal > /dev/null 2>&1"); print "done.\n";
 		&timestamp; print "Adding $_ key to the cluster... "; capture("ceph auth add $_ osd 'allow *' mon 'allow rwx' -i $mountpoint/keyring > /dev/null 2>&1"); print "done.\n";
-		unless (`grep $mountpoint /etc/fstab`) { open (FSTAB, '>>/etc/fstab'); print FSTAB "$path\t$mountpoint\txfs\tdefaults\t0\t2\n"; close (FSTAB); };
+		unless (`grep $mountpoint /etc/fstab`) { open (FSTAB, '>>/etc/fstab'); print FSTAB "$path\t$mountpoint\txfs\tnoatime,nodiratime\t0\t2\n"; close (FSTAB); };
 		&timestamp; print "Setting initial weight of $_ to 0... "; capture("ceph osd reweight $num 0"); print "done.\n";
 		&timestamp; print "Starting service for $_... "; capture("service ceph start $_ > /dev/null 2>&1"); print "done.\n";
 		for (my $weight = 0.01; $weight <= 1; $weight += 0.01) {
